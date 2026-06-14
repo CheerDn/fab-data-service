@@ -1,0 +1,52 @@
+backend:
+  image:
+    repository: fab-data-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 8080
+
+frontend:
+  image:
+    repository: fab-data-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    port: 80
+
+postgres:
+  host: postgres
+  port: 5432
+  database: fabdata
+  username: fab
+  password: fab123
+
+redis:
+  host: redis
+  port: 6379
+
+jaeger:
+  endpoint: http://jaeger:4317
+
+hpa:
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70

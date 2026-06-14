@@ -1,0 +1,114 @@
+# fab-data-service
+
+A portfolio demo project simulating a web service for viewing and analyzing semiconductor fab equipment sensor data. Demonstrates full-stack engineering across the application, observability, and DevOps/IaC layers.
+
+---
+
+## Architecture Overview
+
+The system is organized into three layers:
+
+**Application Layer**
+- **Frontend**: React 18 + TypeScript + Vite, served by Nginx. Features a virtualized sensor log table (10,000+ rows without frame drops) and a Recharts temperature line chart. Uses React Query for caching and background refetching.
+- **Backend**: Java 21 + Spring Boot 3 REST API. Redis-backed caching with Micrometer instrumentation, async parallel aggregation via `@Async`, and Flyway-managed schema migrations. OTel agent exports traces to Jaeger.
+- **Database**: PostgreSQL 16 with 500,000 synthetic sensor readings across 20 equipment units. Composite index on `(equipment_id, recorded_at DESC)` enables sub-10ms paginated queries.
+
+**Observability Layer**
+- **Metrics**: Prometheus scrapes `/actuator/prometheus` every 15s. Custom counters for Redis cache hit/miss rates.
+- **Logs**: Promtail collects Docker container logs and ships to Loki. Grafana Logs panel streams live backend logs.
+- **Traces**: Spring Boot backend exports OpenTelemetry traces to Jaeger (all-in-one). Every HTTP request produces a distributed trace.
+- **Dashboards**: Grafana auto-provisioned with Prometheus, Loki, and Jaeger datasources and a pre-built dashboard covering API request rate, p99 latency, JVM heap, and cache hit rate.
+
+**DevOps / IaC Layer** *(production path — not required for local demo)*
+- **Containerization**: Multi-stage Dockerfiles for both backend (Maven → JRE Alpine) and frontend (Node → Nginx Alpine).
+- **Kubernetes**: Helm chart in `helm/fab-data/` with Deployment, Service, HPA (70% CPU target), and ConfigMap resources.
+- **Cluster provisioning**: Ansible would provision K8s nodes; `scripts/setup-minikube.sh` mirrors this locally.
+- **CI/CD**: GitLab CI would build and push images on merge. ArgoCD would handle GitOps sync from the Helm chart to the cluster in production — not included in this demo.
+
+---
+
+## Quick Start
+
+**Prerequisites**: Docker and Docker Compose installed.
+
+```bash
+git clone <repo-url>
+cd fab-data-service
+docker compose up --build
+```
+
+The first build downloads base images and compiles the backend (~5 minutes). Subsequent starts are fast.
+
+**Service URLs**
+
+| Service | URL | Credentials |
+|---|---|---|
+| Application | http://localhost:80 | — |
+| Grafana | http://localhost:3001 | admin / admin |
+| Jaeger UI | http://localhost:16686 | — |
+| Prometheus | http://localhost:9090 | — |
+| Backend API | http://localhost:8080/api/equipment | — |
+
+---
+
+## Performance Demo Scenarios
+
+### 1. Frontend: Virtualization Toggle
+
+Navigate to http://localhost and select any equipment from the sidebar. The Sensor Log table defaults to **virtualized mode**, using `@tanstack/react-virtual` to render only the rows visible in the viewport.
+
+Click **"Disable virtualization"** to switch to a plain `<table>` render. With a full 200-row page, scrolling performance degrades noticeably (observe FPS drop in Chrome DevTools → Performance). Re-enable virtualization to see the improvement.
+
+For a more dramatic effect, open DevTools → Performance tab, record while toggling, and compare frame timings.
+
+### 2. Backend: Redis Cache Hit Rate
+
+1. Open Grafana at http://localhost:3001 → **Fab Data Service** dashboard → panel **"Cache Hit Rate"**.
+2. Call the equipment list endpoint twice in quick succession:
+   ```bash
+   curl http://localhost/api/equipment
+   curl http://localhost/api/equipment
+   ```
+3. The first call populates the Redis cache (increments `cache.equipment.miss`). The second call returns from cache (increments `cache.equipment.hit`). Watch the **Cache Hit Rate** panel approach 1.0.
+
+The TTL is 60 seconds; after expiry the cache is invalidated and the next call fetches from PostgreSQL again.
+
+### 3. Database: Indexed vs. Non-Indexed Query
+
+Connect to PostgreSQL:
+```bash
+docker exec -it fab-postgres psql -U fab -d fabdata
+```
+
+**Indexed query** (uses `idx_sensor_log_equipment_time`):
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM sensor_log
+WHERE equipment_id = 1
+  AND recorded_at BETWEEN NOW() - INTERVAL '7 days' AND NOW()
+ORDER BY recorded_at DESC
+LIMIT 200;
+```
+Expected: Index Scan, execution time < 10ms.
+
+**Non-indexed / full-scan equivalent** (simulates `findAllByEquipmentIdNoPaging`):
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM sensor_log
+WHERE equipment_id = 1
+ORDER BY recorded_at DESC;
+```
+Expected: Index Scan on all 25,000 rows for this equipment, returning the full set — execution time is significantly higher with no `LIMIT`. This mirrors the intentionally unbounded repository method (`findAllByEquipmentIdNoPaging`) documented in `SensorLogRepository.java` for educational purposes.
+
+---
+
+## Production Path
+
+In a production deployment:
+
+1. **Ansible** provisions K8s worker nodes (OS hardening, CNI install, kubelet config).
+2. **GitLab CI** pipeline builds Docker images on every merge to `main`, tags them with the commit SHA, and pushes to a private registry.
+3. **Helm** packages the backend, frontend, HPA, and ConfigMap. The `helm/fab-data/` chart in this repo is the production artifact.
+4. **ArgoCD** watches the Helm chart in Git and automatically syncs the cluster state — any merge that updates `values.yaml` triggers a rolling deployment with no manual intervention.
+
+The `scripts/setup-minikube.sh` script mirrors this flow locally using Minikube, demonstrating that the same Helm chart works in both environments.
