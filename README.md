@@ -43,7 +43,7 @@ The first build downloads base images and compiles the backend (~5 minutes). Sub
 
 | Service | URL | Credentials |
 |---|---|---|
-| Application | http://localhost:80 | — |
+| Application | http://localhost:3000 | — |
 | Grafana | http://localhost:3001 | admin / admin |
 | Jaeger UI | http://localhost:16686 | — |
 | Prometheus | http://localhost:9090 | — |
