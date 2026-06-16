@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useSensorLogs } from '../../hooks/useEquipmentData'
 import type { SensorLog } from '../../api/client'
@@ -41,7 +41,7 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleString()
 }
 
-function VirtualizedBody({ rows }: { rows: SensorLog[] }) {
+function VirtualizedBody({ rows, onDomCount }: { rows: SensorLog[]; onDomCount: (n: number) => void }) {
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -49,11 +49,16 @@ function VirtualizedBody({ rows }: { rows: SensorLog[] }) {
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
   })
+  const virtualItems = virtualizer.getVirtualItems()
+
+  useEffect(() => {
+    onDomCount(virtualItems.length)
+  }, [virtualItems.length, onDomCount])
 
   return (
     <div ref={parentRef} style={styles.scrollContainer}>
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((virtualRow) => {
+        {virtualItems.map((virtualRow) => {
           const row = rows[virtualRow.index]
           return (
             <div
@@ -82,7 +87,11 @@ function VirtualizedBody({ rows }: { rows: SensorLog[] }) {
   )
 }
 
-function PlainBody({ rows }: { rows: SensorLog[] }) {
+function PlainBody({ rows, onDomCount }: { rows: SensorLog[]; onDomCount: (n: number) => void }) {
+  useEffect(() => {
+    onDomCount(rows.length)
+  }, [rows.length, onDomCount])
+
   return (
     <div style={styles.scrollContainer}>
       <table style={styles.table}>
@@ -104,7 +113,9 @@ function PlainBody({ rows }: { rows: SensorLog[] }) {
 export default function SensorTable({ equipmentId, start, end }: Props) {
   const [page, setPage] = useState(0)
   const [virtualized, setVirtualized] = useState(true)
+  const [domCount, setDomCount] = useState(0)
   const { data, isLoading, error } = useSensorLogs(equipmentId, start, end, page)
+  const handleDomCount = useCallback((n: number) => setDomCount(n), [])
 
   const rows = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
@@ -113,11 +124,16 @@ export default function SensorTable({ equipmentId, start, end }: Props) {
   if (isLoading) return <div style={{ padding: 24, textAlign: 'center', color: '#a0aec0' }}>Loading sensor data...</div>
   if (error) return <div style={{ padding: 24, color: '#e53e3e' }}>Failed to load sensor logs.</div>
 
+  const domBadgeColor = virtualized ? '#38a169' : '#dd6b20'
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.toolbar}>
         <span style={styles.info}>
           {totalElements.toLocaleString()} records · page {page + 1} of {Math.max(totalPages, 1)}
+        </span>
+        <span style={{ fontSize: 12, color: '#fff', background: domBadgeColor, borderRadius: 4, padding: '2px 8px', fontWeight: 600 }}>
+          DOM rows: {domCount} / {rows.length}
         </span>
         <button
           style={styles.toggle}
@@ -133,7 +149,10 @@ export default function SensorTable({ equipmentId, start, end }: Props) {
             <div key={h} style={styles.th}>{h}</div>
           ))}
         </div>
-        {virtualized ? <VirtualizedBody rows={rows} /> : <PlainBody rows={rows} />}
+        {virtualized
+          ? <VirtualizedBody rows={rows} onDomCount={handleDomCount} />
+          : <PlainBody rows={rows} onDomCount={handleDomCount} />
+        }
       </div>
 
       <div style={styles.pagination}>

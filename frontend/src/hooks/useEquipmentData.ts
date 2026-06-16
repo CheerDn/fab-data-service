@@ -24,7 +24,7 @@ export function useEquipmentDetail(id: number) {
 export function useSensorLogs(id: number, start: string, end: string, page: number) {
   return useQuery({
     queryKey: ['sensor-logs', id, start, end, page],
-    queryFn: () => fetchSensorLogs(id, start, end, page, 200),
+    queryFn: () => fetchSensorLogs(id, start, end, page, 1000),
     enabled: id > 0,
   })
 }
