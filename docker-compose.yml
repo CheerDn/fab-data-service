@@ -120,7 +120,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
 
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:3.0.0
     container_name: fab-promtail
     volumes:
       - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
