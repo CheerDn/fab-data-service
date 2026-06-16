@@ -4,6 +4,8 @@ import com.fab.datasvc.dto.SensorLogDTO;
 import com.fab.datasvc.dto.SensorSummaryDTO;
 import com.fab.datasvc.repository.SensorLogRepository;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,9 +23,11 @@ public class SensorLogService {
     private static final int MAX_PAGE_SIZE = 200;
 
     private final SensorLogRepository sensorLogRepository;
+    private final ObservationRegistry observationRegistry;
 
-    public SensorLogService(SensorLogRepository sensorLogRepository) {
+    public SensorLogService(SensorLogRepository sensorLogRepository, ObservationRegistry observationRegistry) {
         this.sensorLogRepository = sensorLogRepository;
+        this.observationRegistry = observationRegistry;
     }
 
     @Observed(name = "SensorLogService.getMetrics")
@@ -31,8 +35,11 @@ public class SensorLogService {
     public Page<SensorLogDTO> getMetrics(Integer equipmentId, OffsetDateTime start, OffsetDateTime end, int page, int size) {
         int effectiveSize = Math.min(size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, effectiveSize);
-        return sensorLogRepository.findByEquipmentIdAndTimeRange(equipmentId, start, end, pageable)
-            .map(SensorLogDTO::from);
+        return Observation.createNotStarted("SensorLogRepository", observationRegistry)
+            .lowCardinalityKeyValue("class", "SensorLogRepository")
+            .lowCardinalityKeyValue("method", "findByEquipmentIdAndTimeRange")
+            .observe(() -> sensorLogRepository.findByEquipmentIdAndTimeRange(equipmentId, start, end, pageable)
+                .map(SensorLogDTO::from));
     }
 
     @Observed(name = "SensorLogService.getSummaryAsync")
