@@ -1,6 +1,28 @@
 # fab-data-service
 
-A portfolio demo project simulating a web service for viewing and analyzing semiconductor fab equipment sensor data. Demonstrates full-stack engineering across the application, observability, and DevOps/IaC layers.
+A full-stack portfolio project designed to showcase advanced concepts in production-grade **observability**, **performance tuning**, and **developer experience (DX)** within a simulated semiconductor fab environment.
+
+---
+
+## Key Showcases
+
+### Full-Stack Observability
+* **Tech Stack**: Fully integrated **Grafana + Prometheus + Loki + Jaeger** ecosystem.
+* **Distributed Tracing**: Leverages distributed trace context (traceId/spanId) and client IP filtering to trace specific HTTP requests seamlessly from the gateway down to internal service components.
+* **Granular Monitoring**: Captures fine-grained performance metrics and live traces across 5 pre-configured Grafana dashboard panels:
+  * **API Request Rate**: Tracks real-time HTTP traffic (`reqps`) breakdown by individual endpoint URI and HTTP method.
+  * **API p99 Latency**: Monitors the 99th percentile response time (`seconds`) via histogram quantiles to identify tail latency issues.
+  * **JVM Heap Used**: Monitors internal Spring Boot memory allocation (`bytes`) to safeguard heap utilization.
+  * **Cache Hit Rate**: Evaluates Redis caching efficiency by calculating the real-time ratio of hits versus misses.
+  * **Log Stream (Backend)**: Streams live container logs directly from the backend via Loki for instant error diagnosis and troubleshooting.
+
+### Performance Tuning
+* **Frontend Optimization**: Implements DOM virtualization via `@tanstack/react-virtual` to ensure smooth rendering and stable frame rates, preventing performance degradation when handling massive sensor log datasets.
+* **Backend Efficiency**: Employs paginated API queries and asynchronous processing (`@Async`) to mitigate heavy memory footprints and avoid unbounded data transfers.
+* **Database Indexing**: Features a comprehensive comparison between **Indexed vs. Non-Indexed queries** using composite indexes `(equipment_id, recorded_at DESC)` on PostgreSQL to ensure sub-10ms query execution times.
+
+### Developer Experience (DX)
+* Integrates `vite-plugin-react-click-to-component`, allowing developers to `Option + Left Click` (or `Alt + Left Click`) any component in the browser to jump directly to its source code in IDEs like VS Code, drastically accelerating UI debugging and onboarding
 
 ---
 
@@ -9,8 +31,8 @@ A portfolio demo project simulating a web service for viewing and analyzing semi
 The system is organized into three layers:
 
 **Application Layer**
-- **Frontend**: React 18 + TypeScript + Vite, served by Nginx. Features a virtualized sensor log table (10,000+ rows without frame drops) and a Recharts temperature line chart. Uses React Query for caching and background refetching.
-- **Backend**: Java 21 + Spring Boot 3 REST API. Redis-backed caching with Micrometer instrumentation, async parallel aggregation via `@Async`, and Flyway-managed schema migrations. OTel agent exports traces to Jaeger.
+- **Frontend**: React 18 + TypeScript + Vite, served by Nginx. Features a virtualized sensor log table (up to 200 rows per page without frame drops) and a Recharts temperature line chart. Uses React Query for caching and background refetching.
+- **Backend**: Java 21 + Spring Boot 3 REST API. Redis-backed caching with Micrometer instrumentation, async parallel aggregation via `@Async`, and Flyway-managed schema migrations. Spring Boot Actuator native OTLP exporter sends traces to Jaeger.
 - **Database**: PostgreSQL 16 with 500,000 synthetic sensor readings across 20 equipment units. Composite index on `(equipment_id, recorded_at DESC)` enables sub-10ms paginated queries.
 
 **Observability Layer**
@@ -47,7 +69,7 @@ The first build downloads base images and compiles the backend (~5 minutes). Sub
 | Grafana | http://localhost:3001 | admin / admin |
 | Jaeger UI | http://localhost:16686 | — |
 | Prometheus | http://localhost:9090 | — |
-| Backend API | http://localhost:8080/api/equipment | — |
+| Backend API | http://localhost:8080/api/equipment (direct) / http://localhost/api/equipment (via proxy) | — |
 
 ---
 
@@ -55,7 +77,7 @@ The first build downloads base images and compiles the backend (~5 minutes). Sub
 
 ### 1. Frontend: Virtualization Toggle
 
-Navigate to http://localhost and select any equipment from the sidebar. The Sensor Log table defaults to **virtualized mode**, using `@tanstack/react-virtual` to render only the rows visible in the viewport.
+Navigate to http://localhost:3000 and select any equipment from the sidebar. The Sensor Log table defaults to **virtualized mode**, using `@tanstack/react-virtual` to render only the rows visible in the viewport.
 
 Click **"Disable virtualization"** to switch to a plain `<table>` render. With a full 200-row page, scrolling performance degrades noticeably (observe FPS drop in Chrome DevTools → Performance). Re-enable virtualization to see the improvement.
 
