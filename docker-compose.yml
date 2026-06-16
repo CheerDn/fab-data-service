@@ -79,9 +79,11 @@ services:
       - "3000:80"
     networks:
       - fab-net
+    depends_on:
+      - backend
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: fab-nginx
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -94,7 +96,7 @@ services:
       - frontend
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.52.0
     container_name: fab-prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -133,7 +135,7 @@ services:
       - loki
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.57
     container_name: fab-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
