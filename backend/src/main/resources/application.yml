@@ -31,13 +31,9 @@ management:
   tracing:
     sampling:
       probability: 1.0
-
-otel:
-  exporter:
-    otlp:
-      endpoint: http://jaeger:4317
-  service:
-    name: fab-data-backend
+  otlp:
+    tracing:
+      endpoint: http://jaeger:4318/v1/traces
 
 server:
   port: 8080
