@@ -52,12 +52,16 @@ services:
       dockerfile: Dockerfile
     container_name: fab-data-backend
     environment:
+      SPRING_APPLICATION_NAME: fab-data-service
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fabdata
       SPRING_DATASOURCE_USERNAME: fab
       SPRING_DATASOURCE_PASSWORD: fab123
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://jaeger:4318/v1/traces
+      JAVA_TOOL_OPTIONS: -javaagent:/app/opentelemetry-javaagent.jar
+      OTEL_SERVICE_NAME: fab-data-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_TRACES_SAMPLER: parentbased_always_on
     ports:
       - "8080:8080"
     networks:
@@ -66,6 +70,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      jaeger:
         condition: service_healthy
 
   frontend:
@@ -137,11 +143,18 @@ services:
     container_name: fab-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+      JAEGER_DISABLED: "true"
     ports:
       - "16686:16686"
       - "4317:4317"
+      - "4318:4318"
     networks:
       - fab-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:14269/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   grafana:
     image: grafana/grafana:10.4.2
