@@ -3,13 +3,13 @@
 A full-stack portfolio project designed to showcase advanced concepts in production-grade **observability**, **performance tuning**, and **developer experience (DX)** within a simulated semiconductor fab environment.
 
 Frontend example view:
-<img width="1035" height="1330" alt="螢幕擷取畫面 2026-06-16 232405" src="https://github.com/user-attachments/assets/761ffec9-9f8e-440f-94a5-7ee68e4c3d93" />
+<img width="700" alt="螢幕擷取畫面 2026-06-16 232405" src="https://github.com/user-attachments/assets/761ffec9-9f8e-440f-94a5-7ee68e4c3d93" />
 
 Jaeger example view:
-<img width="1064" height="1732" alt="螢幕擷取畫面 2026-06-16 232346" src="https://github.com/user-attachments/assets/5bbf041e-8d1c-4d22-b1ec-2d00568bef9d" />
+<img width="700" alt="螢幕擷取畫面 2026-06-16 232346" src="https://github.com/user-attachments/assets/5bbf041e-8d1c-4d22-b1ec-2d00568bef9d" />
 
 Grafana example view:
-<img width="1031" height="1262" alt="螢幕擷取畫面 2026-06-16 233221" src="https://github.com/user-attachments/assets/e4fd037f-1ff7-4f43-a3f0-b1f18856aa7f" />
+<img width="700" alt="螢幕擷取畫面 2026-06-16 233221" src="https://github.com/user-attachments/assets/e4fd037f-1ff7-4f43-a3f0-b1f18856aa7f" />
 ---
 
 ## Key Showcases
