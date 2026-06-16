@@ -4,8 +4,7 @@ import com.fab.datasvc.dto.EquipmentDTO;
 import com.fab.datasvc.repository.EquipmentRepository;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.opentelemetry.instrumentation.annotations.SpanAttribute;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.micrometer.observation.annotation.Observed;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +23,7 @@ public class EquipmentService {
         this.meterRegistry = meterRegistry;
     }
 
-    @WithSpan("EquipmentService.listAll")
+    @Observed(name = "EquipmentService.listAll")
     @Timed(value = "equipment.list", description = "Time to list all equipment", histogram = true)
     @Cacheable(value = "equipment-list", unless = "#result.isEmpty()")
     public List<EquipmentDTO> listAll() {
@@ -39,9 +38,9 @@ public class EquipmentService {
         meterRegistry.counter("cache.equipment.hit").increment();
     }
 
-    @WithSpan("EquipmentService.findById")
+    @Observed(name = "EquipmentService.findById")
     @Timed(value = "equipment.find_by_id", description = "Time to find equipment by id", histogram = true)
-    public Optional<EquipmentDTO> findById(@SpanAttribute("equipment.id") Integer id) {
+    public Optional<EquipmentDTO> findById(Integer id) {
         return equipmentRepository.findById(id).map(EquipmentDTO::from);
     }
 }

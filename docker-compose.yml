@@ -58,10 +58,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: fab123
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      JAVA_TOOL_OPTIONS: -javaagent:/app/opentelemetry-javaagent.jar
-      OTEL_SERVICE_NAME: fab-data-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
-      OTEL_TRACES_SAMPLER: parentbased_always_on
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - "8080:8080"
     networks:
