@@ -29,7 +29,11 @@ Grafana example view:
 
 ### Performance Tuning
 * **Frontend Optimization**: Implements DOM virtualization via `@tanstack/react-virtual` to ensure smooth rendering and stable frame rates, preventing performance degradation when handling massive sensor log datasets.
-* **Backend Efficiency**: Employs paginated API queries and asynchronous processing (`@Async`) to mitigate heavy memory footprints and avoid unbounded data transfers.
+* **Backend Efficiency**:
+  * **Pagination** — the metrics endpoint enforces a default page size of 100 rows (hard cap 200) to prevent unbounded data transfers and uncontrolled memory growth.
+  * **Redis Caching** — the equipment list is cached with `@Cacheable` (60 s TTL) to avoid redundant DB round-trips for frequently read, rarely changed reference data.
+  * **Async Thread Pool** — the heavier aggregation endpoint (`/summary`) runs on a dedicated `@Async` executor (core 4, max 16 threads), freeing Tomcat request threads to serve concurrent requests while the DB query executes.
+  * **JPQL Constructor Projections** — all repository queries return lightweight DTOs via constructor expressions rather than full JPA entities, reducing the data volume fetched from PostgreSQL.
 * **Database Indexing**: Features a comprehensive comparison between **Indexed vs. Non-Indexed queries** using composite indexes `(equipment_id, recorded_at DESC)` on PostgreSQL to ensure sub-10ms query execution times.
 
 ### Developer Experience (DX)
@@ -43,7 +47,7 @@ The system is organized into three layers:
 
 **Application Layer**
 - **Frontend**: React 18 + TypeScript + Vite, served by Nginx. Features a virtualized sensor log table (up to 200 rows per page without frame drops) and a Recharts temperature line chart. Uses React Query for caching and background refetching.
-- **Backend**: Java 21 + Spring Boot 3 REST API. Redis-backed caching with Micrometer instrumentation, async parallel aggregation via `@Async`, and Flyway-managed schema migrations. Spring Boot Actuator native OTLP exporter sends traces to Jaeger.
+- **Backend**: Java 21 + Spring Boot 3 REST API. Redis-backed caching with Micrometer instrumentation, async non-blocking summary query via `@Async`, and Flyway-managed schema migrations. Spring Boot Actuator native OTLP exporter sends traces to Jaeger.
 - **Database**: PostgreSQL 16 with 500,000 synthetic sensor readings across 20 equipment units. Composite index on `(equipment_id, recorded_at DESC)` enables sub-10ms paginated queries.
 
 **Observability Layer**
