@@ -97,7 +97,7 @@ services:
       - frontend
 
   prometheus:
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:v3
     container_name: fab-prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -112,7 +112,7 @@ services:
       - fab-net
 
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:3.0.0
     container_name: fab-loki
     volumes:
       - loki-data:/loki
