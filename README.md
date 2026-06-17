@@ -56,11 +56,9 @@ The system is organized into three layers:
 - **Traces**: Spring Boot backend exports OpenTelemetry traces to Jaeger (all-in-one). Every HTTP request produces a distributed trace. Sampling is set to 100% (`probability: 1.0`) for demo completeness; in production, reduce to 10% (`0.1`) or adopt tail-based sampling via an OpenTelemetry Collector to retain only slow/error traces.
 - **Dashboards**: Grafana auto-provisioned with Prometheus, Loki, and Jaeger datasources and a pre-built dashboard covering API request rate, p99 latency, JVM heap, and cache hit rate.
 
-**DevOps / IaC Layer** *(production path — not required for local demo)*
-- **Containerization**: Multi-stage Dockerfiles for both backend (Maven → JRE Alpine) and frontend (Node → Nginx Alpine).
-- **Kubernetes**: Helm chart in `helm/fab-data/` with Deployment, Service, HPA (70% CPU target), and ConfigMap resources.
-- **Cluster provisioning**: Ansible would provision K8s nodes; `scripts/setup-minikube.sh` mirrors this locally.
-- **CI/CD**: GitLab CI would build and push images on merge. ArgoCD would handle GitOps sync from the Helm chart to the cluster in production — not included in this demo.
+**DevOps / IaC Layer**
+- **Containerization**: Multi-stage Dockerfiles for both services keep final images lean by separating build-time dependencies from the runtime artifact. The entire stack is orchestrated with Docker Compose.
+
 
 ---
 
@@ -146,7 +144,5 @@ In a production deployment:
 
 1. **Ansible** provisions K8s worker nodes (OS hardening, CNI install, kubelet config).
 2. **GitLab CI** pipeline builds Docker images on every merge to `main`, tags them with the commit SHA, and pushes to a private registry.
-3. **Helm** packages the backend, frontend, HPA, and ConfigMap. The `helm/fab-data/` chart in this repo is the production artifact.
+3. **Helm** packages the backend, frontend, HPA, and ConfigMap. The `helm/fab-data/` chart in this repo is designed as the production artifact, but no live cluster or CI/CD pipeline is wired up in this demo.
 4. **ArgoCD** watches the Helm chart in Git and automatically syncs the cluster state — any merge that updates `values.yaml` triggers a rolling deployment with no manual intervention.
-
-The `scripts/setup-minikube.sh` script mirrors this flow locally using Minikube, illustrating how the same Helm chart can target in both environments.
