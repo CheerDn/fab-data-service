@@ -135,7 +135,8 @@ Expected: Index Scan on all 25,000 rows for this equipment, returning the full s
 
 ---
 
-## Production Path
+## Production Path 
+> This section is illustrative — only the Helm templates are included in this repo.
 
 In a production deployment:
 
@@ -144,4 +145,4 @@ In a production deployment:
 3. **Helm** packages the backend, frontend, HPA, and ConfigMap. The `helm/fab-data/` chart in this repo is the production artifact.
 4. **ArgoCD** watches the Helm chart in Git and automatically syncs the cluster state — any merge that updates `values.yaml` triggers a rolling deployment with no manual intervention.
 
-The `scripts/setup-minikube.sh` script mirrors this flow locally using Minikube, demonstrating that the same Helm chart works in both environments.
+The `scripts/setup-minikube.sh` script mirrors this flow locally using Minikube, illustrating how the same Helm chart can target in both environments.
