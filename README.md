@@ -49,7 +49,7 @@ The system is organized into three layers:
 **Observability Layer**
 - **Metrics**: Prometheus scrapes `/actuator/prometheus` every 15s. Custom counters for Redis cache hit/miss rates.
 - **Logs**: Promtail collects Docker container logs and ships to Loki. Grafana Logs panel streams live backend logs.
-- **Traces**: Spring Boot backend exports OpenTelemetry traces to Jaeger (all-in-one). Every HTTP request produces a distributed trace.
+- **Traces**: Spring Boot backend exports OpenTelemetry traces to Jaeger (all-in-one). Every HTTP request produces a distributed trace. Sampling is set to 100% (`probability: 1.0`) for demo completeness; in production, reduce to 10% (`0.1`) or adopt tail-based sampling via an OpenTelemetry Collector to retain only slow/error traces.
 - **Dashboards**: Grafana auto-provisioned with Prometheus, Loki, and Jaeger datasources and a pre-built dashboard covering API request rate, p99 latency, JVM heap, and cache hit rate.
 
 **DevOps / IaC Layer** *(production path — not required for local demo)*
